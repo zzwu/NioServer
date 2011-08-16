@@ -1,5 +1,7 @@
 package com.got.nioserver;
 
-public interface AcceptableKeyHanlder {
+import java.nio.channels.SelectionKey;
 
+public interface AcceptableKeyHanlder {
+	public void hanlde(SelectionKey key);
 }
