@@ -11,4 +11,5 @@ example.log
 .svn
 # osx noise
 .DS_Store
+bin
 
