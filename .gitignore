@@ -1,0 +1,14 @@
+# code noise
+target/*
+.classpath
+.settings
+.bin
+.merge_file_*
+.project
+example.log.*
+example.log
+# old skool
+.svn
+# osx noise
+.DS_Store
+
