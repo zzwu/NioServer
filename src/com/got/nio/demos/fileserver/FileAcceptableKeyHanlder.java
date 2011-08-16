@@ -7,7 +7,7 @@ import com.got.nioserver.AcceptableKeyHanlder;
 public class FileAcceptableKeyHanlder implements AcceptableKeyHanlder {
 
 	@Override
-	public void hanlde(SelectionKey key) {
+	public void handle(SelectionKey key) {
 		// TODO Auto-generated method stub
 		
 	}
