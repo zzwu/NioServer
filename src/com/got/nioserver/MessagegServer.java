@@ -43,11 +43,11 @@ public class MessagegServer {
 			while (keyIterator.hasNext()) {
 				SelectionKey key = keyIterator.next();
 				if (key.isAcceptable()) {
-					acceptableKeyHanlder.handle(key);
+					acceptableKeyHanlder.handle(key, selector);
 				} else if (key.isReadable())  {
-					readableKeyHanlder.handle(key);
+					readableKeyHanlder.handle(key, selector);
 				} else if (key.isWritable()) {
-					writableKeyHanlder.handle(key);
+					writableKeyHanlder.handle(key, selector);
 				} else {
 					System.out.println("key.interestOps():" + key.interestOps());
 				}
