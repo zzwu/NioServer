@@ -1,4 +1,4 @@
-package com.got.nioserver.print;
+package com.got.nio.demos.fileserver;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -10,19 +10,19 @@ import java.nio.charset.CharsetDecoder;
 
 import com.got.nioserver.ReadableKeyHanlder;
 
-public class PrintReadableKeyHanlder implements ReadableKeyHanlder {
+public class FileReadableKeyHanlder implements ReadableKeyHanlder {
 	
 	// The buffer into which we'll read data when it's available
 	private ByteBuffer buffer = ByteBuffer.allocate(8192);
 	private Charset charset;// 字符集
 	private CharsetDecoder decoder;// 解码器
 	private static String DEFAULT_CHARSET = "GB2312";// 默认码集
-
-	public PrintReadableKeyHanlder() {
+	
+	public FileReadableKeyHanlder() {
 		this.charset = Charset.forName(DEFAULT_CHARSET);
 		this.decoder = this.charset.newDecoder();
 	}
-	
+
 	@Override
 	public void handle(SelectionKey key, Selector selector) {
 		try {
@@ -33,6 +33,7 @@ public class PrintReadableKeyHanlder implements ReadableKeyHanlder {
 				CharBuffer charBuffer = decoder.decode(this.buffer);
 				System.out.println("Client >>" + charBuffer.toString());
 				channel.register(selector, SelectionKey.OP_WRITE);//为客户sockt通道注册写操作
+				key.attach(new FileSender(channel, charBuffer.toString()));
 			} else {// 客户已经断开
 				channel.close();
 			}
@@ -40,6 +41,7 @@ public class PrintReadableKeyHanlder implements ReadableKeyHanlder {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+
 	}
 
 }

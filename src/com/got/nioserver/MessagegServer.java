@@ -18,39 +18,49 @@ public class MessagegServer {
 	private ReadableKeyHanlder readableKeyHanlder;
 	private WritableKeyHanlder writableKeyHanlder;
 	private boolean stop;
+	private Selector selector;
+	private int port;
 	
-	public MessagegServer(AcceptableKeyHanlder acceptableKeyHanlder, ReadableKeyHanlder readableKeyHanlder, WritableKeyHanlder writableKeyHanlder) {
+	public MessagegServer(int port, AcceptableKeyHanlder acceptableKeyHanlder, ReadableKeyHanlder readableKeyHanlder, WritableKeyHanlder writableKeyHanlder) throws Exception {
 		this.acceptableKeyHanlder = acceptableKeyHanlder;
 		this.readableKeyHanlder = readableKeyHanlder;
 		this.writableKeyHanlder = writableKeyHanlder;
+		this.port = port;
+		//init channel and selector
+		initSelector();
 	}
 
-	public void start(int port) throws Exception {
-		//init channel and selector
-		Selector selector = Selector.open();
+	private void initSelector() throws Exception {
+		selector = Selector.open();
 		ServerSocketChannel channel = ServerSocketChannel.open();
 		channel.configureBlocking(false);
 		InetSocketAddress socket = new InetSocketAddress(port);
 		channel.socket().bind(socket);
-		//??? TODO channel.register(selector, SelectionKey.OP_ACCEPT | SelectionKey.OP_READ | SelectionKey.OP_WRITE);
 		channel.register(selector, SelectionKey.OP_ACCEPT);
-		
-		//The number of keys, possibly zero, whose ready-operation sets were updated 
-		while(selector.select() > 0 && !stop) {
-			Set<SelectionKey> selectedKeySet = selector.selectedKeys();
-			Iterator<SelectionKey> keyIterator = selectedKeySet.iterator();
-			//handle keys
-			while (keyIterator.hasNext()) {
-				SelectionKey key = keyIterator.next();
-				if (key.isAcceptable()) {
-					acceptableKeyHanlder.handle(key, selector);
-				} else if (key.isReadable())  {
-					readableKeyHanlder.handle(key, selector);
-				} else if (key.isWritable()) {
-					writableKeyHanlder.handle(key, selector);
-				} else {
-					System.out.println("key.interestOps():" + key.interestOps());
+	}
+
+	public void start() {
+		while (!stop) {
+			try {
+				selector.select();
+				Set<SelectionKey> selectedKeySet = selector.selectedKeys();
+				Iterator<SelectionKey> keyIterator = selectedKeySet.iterator();
+				//handle keys
+				while (keyIterator.hasNext()) {
+					SelectionKey key = keyIterator.next();
+					if (key.isAcceptable()) {
+						acceptableKeyHanlder.handle(key, selector);
+					} else if (key.isReadable())  {
+						readableKeyHanlder.handle(key, selector);
+					} else if (key.isWritable()) {
+						writableKeyHanlder.handle(key, selector);
+					} else {
+						System.out.println("key.interestOps():" + key.interestOps());
+					}
+					keyIterator.remove();
 				}
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 		}
 	}

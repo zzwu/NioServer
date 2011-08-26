@@ -6,11 +6,10 @@ public class MainMessagegServer {
 	public static void main(String[] args) {
 		PrintAcceptableKeyHanlder pa = new PrintAcceptableKeyHanlder();
 		PrintReadableKeyHanlder pr = new PrintReadableKeyHanlder();
-		PrintWritableKeyHanlder pw = new PrintWritableKeyHanlder();
-		
-		MessagegServer s = new MessagegServer(pa, pr, pw);
+		PrintWritableKeyHanlder pw = new PrintWritableKeyHanlder();		
 		try {
-			s.start(8888);
+			MessagegServer s = new MessagegServer(8888, pa, pr, pw);
+			s.start();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
