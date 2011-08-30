@@ -32,7 +32,8 @@ public class PrintReadableKeyHanlder implements ReadableKeyHanlder {
 				this.buffer.flip();
 				CharBuffer charBuffer = decoder.decode(this.buffer);
 				System.out.println("Client >>" + charBuffer.toString());
-				channel.register(selector, SelectionKey.OP_WRITE);//为客户sockt通道注册写操作
+				channel.keyFor(selector).interestOps(SelectionKey.OP_WRITE);
+				//channel.register(selector, SelectionKey.OP_WRITE);//为客户sockt通道注册写操作
 			} else {// 客户已经断开
 				channel.close();
 			}

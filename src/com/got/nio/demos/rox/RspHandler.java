@@ -10,13 +10,13 @@ public class RspHandler {
 	}
 	
 	public synchronized void waitForResponse() {
-		while(this.rsp == null) {
+		while(rsp == null) {
 			try {
 				this.wait();
 			} catch (InterruptedException e) {
 			}
 		}
 		
-		System.out.println(new String(this.rsp));
+		System.out.println(new String(rsp));
 	}
 }

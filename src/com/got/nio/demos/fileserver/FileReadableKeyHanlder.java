@@ -32,8 +32,9 @@ public class FileReadableKeyHanlder implements ReadableKeyHanlder {
 				this.buffer.flip();
 				CharBuffer charBuffer = decoder.decode(this.buffer);
 				System.out.println("Client >>" + charBuffer.toString());
-				channel.register(selector, SelectionKey.OP_WRITE);//为客户sockt通道注册写操作
-				key.attach(new FileSender(channel, charBuffer.toString()));
+				new Thread(new FileSender(channel, charBuffer.toString())).start();
+				//channel.register(selector, SelectionKey.OP_WRITE);//为客户sockt通道注册写操作
+				//key.attach(new FileSender(channel, charBuffer.toString()));
 			} else {// 客户已经断开
 				channel.close();
 			}

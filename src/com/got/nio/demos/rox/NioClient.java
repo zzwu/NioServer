@@ -3,13 +3,18 @@ package com.got.nio.demos.rox;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 public class NioClient implements Runnable {
 	// The host:port combination to connect to
@@ -23,39 +28,40 @@ public class NioClient implements Runnable {
 	private ByteBuffer readBuffer = ByteBuffer.allocate(8192);
 
 	// A list of PendingChange instances
-	private List pendingChanges = new LinkedList();
+	private List<ChangeRequest> pendingChanges = new LinkedList<ChangeRequest>();
 
 	// Maps a SocketChannel to a list of ByteBuffer instances
-	private Map pendingData = new HashMap();
-	
+	private Map<SocketChannel, List<ByteBuffer>> pendingData = new HashMap<SocketChannel, List<ByteBuffer>>();
+
 	// Maps a SocketChannel to a RspHandler
-	private Map rspHandlers = Collections.synchronizedMap(new HashMap());
-	
+	private Map<SocketChannel, RspHandler> rspHandlers = Collections.synchronizedMap(new HashMap<SocketChannel, RspHandler>());
+
 	public NioClient(InetAddress hostAddress, int port) throws IOException {
 		this.hostAddress = hostAddress;
 		this.port = port;
-		this.selector = this.initSelector();
+		selector = initSelector();
 	}
 
 	public void send(byte[] data, RspHandler handler) throws IOException {
 		// Start a new connection
 		SocketChannel socket = this.initiateConnection();
-		
+
 		// Register the response handler
 		this.rspHandlers.put(socket, handler);
-		
+
 		// And queue the data we want written
 		synchronized (this.pendingData) {
-			List queue = (List) this.pendingData.get(socket);
+			List<ByteBuffer> queue = pendingData.get(socket);
 			if (queue == null) {
-				queue = new ArrayList();
-				this.pendingData.put(socket, queue);
+				queue = new ArrayList<ByteBuffer>();
+				pendingData.put(socket, queue);
 			}
 			queue.add(ByteBuffer.wrap(data));
 		}
 
-		// Finally, wake up our selecting thread so it can make the required changes
-		this.selector.wakeup();
+		// Finally, wake up our selecting thread so it can make the required
+		// changes
+		selector.wakeup();
 	}
 
 	public void run() {
@@ -63,16 +69,16 @@ public class NioClient implements Runnable {
 			try {
 				// Process any pending changes
 				synchronized (this.pendingChanges) {
-					Iterator changes = this.pendingChanges.iterator();
+					Iterator<ChangeRequest> changes = pendingChanges.iterator();
 					while (changes.hasNext()) {
-						ChangeRequest change = (ChangeRequest) changes.next();
+						ChangeRequest change = changes.next();
 						switch (change.type) {
 						case ChangeRequest.CHANGEOPS:
-							SelectionKey key = change.socket.keyFor(this.selector);
+							SelectionKey key = change.socket.keyFor(selector);
 							key.interestOps(change.ops);
 							break;
 						case ChangeRequest.REGISTER:
-							change.socket.register(this.selector, change.ops);
+							change.socket.register(selector, change.ops);
 							break;
 						}
 					}
@@ -80,10 +86,10 @@ public class NioClient implements Runnable {
 				}
 
 				// Wait for an event one of the registered channels
-				this.selector.select();
+				selector.select();
 
 				// Iterate over the set of keys for which events are available
-				Iterator selectedKeys = this.selector.selectedKeys().iterator();
+				Iterator<SelectionKey> selectedKeys = selector.selectedKeys().iterator();
 				while (selectedKeys.hasNext()) {
 					SelectionKey key = (SelectionKey) selectedKeys.next();
 					selectedKeys.remove();
@@ -111,7 +117,7 @@ public class NioClient implements Runnable {
 		SocketChannel socketChannel = (SocketChannel) key.channel();
 
 		// Clear out our read buffer so it's ready for new data
-		this.readBuffer.clear();
+		readBuffer.clear();
 
 		// Attempt to read off the channel
 		int numRead;
@@ -134,18 +140,19 @@ public class NioClient implements Runnable {
 		}
 
 		// Handle the response
-		this.handleResponse(socketChannel, this.readBuffer.array(), numRead);
+		handleResponse(socketChannel, this.readBuffer.array(), numRead);
 	}
 
-	private void handleResponse(SocketChannel socketChannel, byte[] data, int numRead) throws IOException {
+	private void handleResponse(SocketChannel socketChannel, byte[] data,
+			int numRead) throws IOException {
 		// Make a correctly sized copy of the data before handing it
 		// to the client
 		byte[] rspData = new byte[numRead];
 		System.arraycopy(data, 0, rspData, 0, numRead);
-		
+
 		// Look up the handler for this channel
 		RspHandler handler = (RspHandler) this.rspHandlers.get(socketChannel);
-		
+
 		// And pass the response to it
 		if (handler.handleResponse(rspData)) {
 			// The handler has seen enough, close the connection
@@ -158,7 +165,7 @@ public class NioClient implements Runnable {
 		SocketChannel socketChannel = (SocketChannel) key.channel();
 
 		synchronized (this.pendingData) {
-			List queue = (List) this.pendingData.get(socketChannel);
+			List<ByteBuffer> queue = pendingData.get(socketChannel);
 
 			// Write until there's not more data ...
 			while (!queue.isEmpty()) {
@@ -182,7 +189,7 @@ public class NioClient implements Runnable {
 
 	private void finishConnection(SelectionKey key) throws IOException {
 		SocketChannel socketChannel = (SocketChannel) key.channel();
-	
+
 		// Finish the connection. If the connection operation failed
 		// this will raise an IOException.
 		try {
@@ -193,7 +200,7 @@ public class NioClient implements Runnable {
 			key.cancel();
 			return;
 		}
-	
+
 		// Register an interest in writing on this channel
 		key.interestOps(SelectionKey.OP_WRITE);
 	}
@@ -202,18 +209,20 @@ public class NioClient implements Runnable {
 		// Create a non-blocking socket channel
 		SocketChannel socketChannel = SocketChannel.open();
 		socketChannel.configureBlocking(false);
-	
+
 		// Kick off connection establishment
-		socketChannel.connect(new InetSocketAddress(this.hostAddress, this.port));
-	
-		// Queue a channel registration since the caller is not the 
+		socketChannel
+				.connect(new InetSocketAddress(this.hostAddress, this.port));
+
+		// Queue a channel registration since the caller is not the
 		// selecting thread. As part of the registration we'll register
 		// an interest in connection events. These are raised when a channel
 		// is ready to complete connection establishment.
-		synchronized(this.pendingChanges) {
-			this.pendingChanges.add(new ChangeRequest(socketChannel, ChangeRequest.REGISTER, SelectionKey.OP_CONNECT));
+		synchronized (this.pendingChanges) {
+			this.pendingChanges.add(new ChangeRequest(socketChannel,
+					ChangeRequest.REGISTER, SelectionKey.OP_CONNECT));
 		}
-		
+
 		return socketChannel;
 	}
 

@@ -3,8 +3,15 @@ import java.nio.channels.SocketChannel;
 import java.util.LinkedList;
 import java.util.List;
 
+
+/**
+ * 服务器消息发送线程。
+ * @author zzwu
+ *
+ */
 public class EchoWorker implements Runnable {
-	private List queue = new LinkedList();
+	
+	private List<ServerDataEvent> queue = new LinkedList<ServerDataEvent>();
 	
 	public void processData(NioServer server, SocketChannel socket, byte[] data, int count) {
 		byte[] dataCopy = new byte[count];
@@ -17,7 +24,6 @@ public class EchoWorker implements Runnable {
 	
 	public void run() {
 		ServerDataEvent dataEvent;
-		
 		while(true) {
 			// Wait for data to become available
 			synchronized(queue) {
@@ -27,7 +33,7 @@ public class EchoWorker implements Runnable {
 					} catch (InterruptedException e) {
 					}
 				}
-				dataEvent = (ServerDataEvent) queue.remove(0);
+				dataEvent = queue.remove(0);
 			}
 			
 			// Return to sender
