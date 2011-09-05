@@ -1,25 +1,23 @@
 package com.got.nio.demos.fileserver;
 
-import java.io.FileOutputStream;
-import java.io.PrintWriter;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.nio.channels.FileChannel;
 
 public class FileClient {
 	
 	public static void main(String[] args) throws Exception {
-		// Socket
-		Socket server = new Socket(InetAddress.getLocalHost(), 8888);
-		PrintWriter out = new PrintWriter(server.getOutputStream());
-		String sayHi = "/Users/zzwu/test/kklog/hjdkkserver.log";
-		System.out.println("say hi : " + sayHi);
-		out.write(sayHi);
-		out.flush();
-		FileChannel to = new FileOutputStream("/Users/zzwu/test/kklog/3.log").getChannel();
-		server.getInputStream();
-		FileUtils.copy(server.getInputStream(), to);
-		server.close();
+		final String srcPath = "/Users/zzwu/test/kklog/kkk/新建文件夹_1909488.rar"; 
+		for (int i = 0; i < 3; i++) {
+			final String objPath = "/Users/zzwu/test/kklog/kkk/新建文件夹_1909488_" + i + ".rar";
+			new Thread(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						new FileReceiver(srcPath, objPath).requestFile();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			}).start();
+		}
 	}
 	
 }

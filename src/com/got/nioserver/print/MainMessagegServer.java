@@ -1,6 +1,6 @@
 package com.got.nioserver.print;
 
-import com.got.nioserver.MessagegServer;
+import com.got.nioserver.MessageServer;
 
 public class MainMessagegServer {
 	public static void main(String[] args) {
@@ -8,7 +8,7 @@ public class MainMessagegServer {
 		PrintReadableKeyHanlder pr = new PrintReadableKeyHanlder();
 		PrintWritableKeyHanlder pw = new PrintWritableKeyHanlder();		
 		try {
-			MessagegServer s = new MessagegServer(8888, pa, pr, pw);
+			MessageServer s = new MessageServer(8888, pa, pr, pw);
 			s.start();
 		} catch (Exception e) {
 			e.printStackTrace();

@@ -13,7 +13,7 @@ import com.got.nioserver.ReadableKeyHanlder;
 public class FileReadableKeyHanlder implements ReadableKeyHanlder {
 	
 	// The buffer into which we'll read data when it's available
-	private ByteBuffer buffer = ByteBuffer.allocate(8192);
+	private ByteBuffer bytebuffer = ByteBuffer.allocate(8192);
 	private Charset charset;// 字符集
 	private CharsetDecoder decoder;// 解码器
 	private static String DEFAULT_CHARSET = "GB2312";// 默认码集
@@ -27,18 +27,18 @@ public class FileReadableKeyHanlder implements ReadableKeyHanlder {
 	public void handle(SelectionKey key, Selector selector) {
 		try {
 			SocketChannel channel = (SocketChannel) key.channel();
-			int count = channel.read(this.buffer);
+			int count = channel.read(bytebuffer);
 			if (count > 0) {
-				this.buffer.flip();
-				CharBuffer charBuffer = decoder.decode(this.buffer);
-				System.out.println("Client >>" + charBuffer.toString());
-				new Thread(new FileSender(channel, charBuffer.toString())).start();
-				//channel.register(selector, SelectionKey.OP_WRITE);//为客户sockt通道注册写操作
-				//key.attach(new FileSender(channel, charBuffer.toString()));
+				bytebuffer.flip();
+				CharBuffer charBuffer = decoder.decode(bytebuffer);
+				String filePath = charBuffer.toString();
+				System.out.println("Client reuqest name >> " + filePath);
+				FileSender sender = new FileSender(filePath);
+				channel.register(selector, SelectionKey.OP_WRITE, sender);
 			} else {// 客户已经断开
 				channel.close();
 			}
-			this.buffer.clear();// 清空缓冲区
+			bytebuffer.clear();// 清空缓冲区
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
